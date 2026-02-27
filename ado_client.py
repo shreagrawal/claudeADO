@@ -154,6 +154,7 @@ class ADOClient:
         assigned_to: str = "",
         area_path: str = "",
         iteration_path: str = "",
+        epic_url: str = None,
         delay: float = 0.2,
     ) -> dict:
         """
@@ -172,6 +173,7 @@ class ADOClient:
             assigned_to=assigned_to,
             area_path=area_path,
             iteration_path=iteration_path,
+            parent_url=epic_url,
         )
         if not feature:
             console.print("[red]Failed to create Feature. Aborting.[/red]")

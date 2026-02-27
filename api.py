@@ -39,6 +39,7 @@ class CreateHierarchyRequest(BaseModel):
     assigned_to: str = ""
     area_path: str = ""
     iteration_path: str = ""
+    epic_id: Optional[int] = None
 
 class CreateSingleRequest(BaseModel):
     wit_type: str
@@ -99,11 +100,18 @@ def parse_plan(body: ParseRequest):
 def create_hierarchy(body: CreateHierarchyRequest):
     cfg = cfg_module.load()
     client = _get_client()
+    epic_url = None
+    if body.epic_id:
+        epic = client.get_work_item(body.epic_id)
+        if not epic:
+            raise HTTPException(status_code=404, detail=f"Epic {body.epic_id} not found in ADO")
+        epic_url = epic["url"]
     results = client.create_hierarchy(
         hierarchy=body.hierarchy,
         assigned_to=body.assigned_to or cfg.get("assigned_to", ""),
         area_path=body.area_path or cfg.get("area_path", ""),
         iteration_path=body.iteration_path or cfg.get("iteration_path", ""),
+        epic_url=epic_url,
     )
     if not results.get("feature"):
         raise HTTPException(status_code=500, detail="Failed to create work items in ADO")

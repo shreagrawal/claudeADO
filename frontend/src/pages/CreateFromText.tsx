@@ -11,6 +11,7 @@ export default function CreateFromText({ onToast }: Props) {
   const [parsing, setParsing]       = useState(false);
   const [creating, setCreating]     = useState(false);
   const [result, setResult]         = useState<{ feature_id: number; feature_url: string; pbi_count: number; task_count: number } | null>(null);
+  const [epicId, setEpicId]         = useState("");
   const [overrides, setOverrides]   = useState<Pick<Config, "assigned_to" | "area_path" | "iteration_path">>({
     assigned_to: "", area_path: "", iteration_path: "",
   });
@@ -46,6 +47,7 @@ export default function CreateFromText({ onToast }: Props) {
         overrides.assigned_to,
         overrides.area_path,
         overrides.iteration_path,
+        epicId ? parseInt(epicId) : undefined,
       );
       setResult(r);
       onToast(`Created Feature #${r.feature_id} with ${r.pbi_count} PBIs and ${r.task_count} tasks`, "success");
@@ -57,7 +59,7 @@ export default function CreateFromText({ onToast }: Props) {
   };
 
   const handleReset = () => {
-    setText(""); setHierarchy(null); setResult(null);
+    setText(""); setHierarchy(null); setResult(null); setEpicId("");
   };
 
   return (
@@ -104,6 +106,21 @@ export default function CreateFromText({ onToast }: Props) {
               <button className="btn-secondary text-sm" onClick={handleReset}>Start over</button>
             </div>
             <HierarchyTree hierarchy={hierarchy} />
+          </div>
+
+          {/* Epic parent */}
+          <div className="card space-y-2">
+            <label className="form-label">
+              Parent Epic ID <span className="text-gray-400 font-normal">(optional)</span>
+            </label>
+            <input
+              type="number"
+              className="form-input max-w-xs"
+              placeholder="e.g. 12345 — leave blank if none"
+              value={epicId}
+              onChange={e => setEpicId(e.target.value)}
+            />
+            <p className="text-xs text-gray-400">The Feature will be linked as a child of this Epic in ADO.</p>
           </div>
 
           {/* Overrides */}

@@ -16,10 +16,11 @@ export const createHierarchy = (
   hierarchy: Hierarchy,
   assigned_to: string,
   area_path: string,
-  iteration_path: string
+  iteration_path: string,
+  epic_id?: number,
 ) =>
   api.post<CreateResult>("/api/create", {
-    hierarchy, assigned_to, area_path, iteration_path,
+    hierarchy, assigned_to, area_path, iteration_path, epic_id,
   }).then(r => r.data);
 
 export const createSingle = (payload: {
