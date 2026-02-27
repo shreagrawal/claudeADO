@@ -40,4 +40,16 @@ export interface WorkItem {
   iteration_path: string;
 }
 
-export type Page = "create-text" | "create-single" | "update" | "delete" | "settings";
+export interface Feature {
+  id: number;
+  title: string;
+  state: string;
+  created_date: string;
+  assigned_to: string;
+  area_path: string;
+  iteration_path: string;
+  tags: string;
+  ado_url: string;
+}
+
+export type Page = "create-text" | "create-single" | "update" | "delete" | "settings" | "features";

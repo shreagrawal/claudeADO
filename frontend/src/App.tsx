@@ -6,6 +6,7 @@ import CreateSingle from "./pages/CreateSingle";
 import UpdateItem from "./pages/UpdateItem";
 import DeleteItems from "./pages/DeleteItems";
 import Settings from "./pages/Settings";
+import MyFeatures from "./pages/MyFeatures";
 import type { Page } from "./types";
 
 interface ToastState { message: string; type: "success" | "error" | "info" }
@@ -19,21 +20,18 @@ export default function App() {
     setTimeout(() => setToast(null), 4000);
   };
 
-  const renderPage = () => {
-    switch (page) {
-      case "create-text":   return <CreateFromText onToast={showToast} />;
-      case "create-single": return <CreateSingle   onToast={showToast} />;
-      case "update":        return <UpdateItem      onToast={showToast} />;
-      case "delete":        return <DeleteItems     onToast={showToast} />;
-      case "settings":      return <Settings        onToast={showToast} />;
-    }
-  };
+  const show = (p: Page) => (page === p ? "" : "hidden");
 
   return (
     <div className="flex min-h-screen">
       <Sidebar current={page} onChange={setPage} />
       <main className="flex-1 p-8 overflow-auto">
-        {renderPage()}
+        <div className={show("create-text")}><CreateFromText onToast={showToast} /></div>
+        <div className={show("create-single")}><CreateSingle   onToast={showToast} /></div>
+        <div className={show("update")}><UpdateItem      onToast={showToast} /></div>
+        <div className={show("delete")}><DeleteItems     onToast={showToast} /></div>
+        <div className={show("features")}><MyFeatures      onToast={showToast} /></div>
+        <div className={show("settings")}><Settings        onToast={showToast} /></div>
       </main>
       {toast && (
         <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />

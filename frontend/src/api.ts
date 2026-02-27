@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { Config, Hierarchy, CreateResult, WorkItem } from "./types";
+import type { Config, Hierarchy, CreateResult, WorkItem, Feature } from "./types";
 
 const BASE = "http://localhost:8000";
 const api = axios.create({ baseURL: BASE });
@@ -38,3 +38,6 @@ export const updateWorkItem = (id: number, fields: Partial<{
 
 export const deleteWorkItems = (ids: number[]) =>
   api.post("/api/workitems/delete", { ids }).then(r => r.data);
+
+export const getFeatures = () =>
+  api.get<{ features: Feature[] }>("/api/features").then(r => r.data.features);

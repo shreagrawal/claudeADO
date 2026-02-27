@@ -40,6 +40,8 @@ class ADOClient:
             })
         return body
 
+    APP_TAG = "claudeADO"
+
     def create_work_item(
         self,
         wit_type: str,
@@ -62,6 +64,9 @@ class ADOClient:
             fields["System.IterationPath"] = iteration_path
         if effort is not None:
             fields["Microsoft.VSTS.Scheduling.Effort"] = effort
+        # Tag every Feature so it can be queried back later
+        if wit_type == "Feature":
+            fields["System.Tags"] = self.APP_TAG
 
         body = self._build_body(fields, parent_url)
         url  = f"{self.base_url}/workitems/${wit_type}?api-version=7.0"
@@ -92,6 +97,56 @@ class ADOClient:
         if r.status_code == 200:
             return r.json()
         return None
+
+    def get_features_by_tag(self, tag: str = "claudeADO") -> list:
+        """Query all Features tagged with the app tag via WIQL."""
+        wiql = {
+            "query": (
+                "SELECT [System.Id] FROM WorkItems "
+                "WHERE [System.WorkItemType] = 'Feature' "
+                f"AND [System.Tags] CONTAINS '{tag}' "
+                "AND [System.State] <> 'Removed' "
+                "ORDER BY [System.CreatedDate] DESC"
+            )
+        }
+        url = f"{self.org_url}/{self.project}/_apis/wit/wiql?api-version=7.0"
+        r   = self.session.post(url, json=wiql)
+        if r.status_code != 200:
+            return []
+
+        work_items = r.json().get("workItems", [])
+        if not work_items:
+            return []
+
+        # Batch-fetch field details (max 200 at a time)
+        ids    = ",".join(str(w["id"]) for w in work_items[:200])
+        fields = "System.Id,System.Title,System.State,System.CreatedDate,System.AssignedTo,System.AreaPath,System.IterationPath,System.Tags"
+        r2     = self.session.get(
+            f"{self.org_url}/{self.project}/_apis/wit/workitems"
+            f"?ids={ids}&fields={fields}&api-version=7.0"
+        )
+        if r2.status_code != 200:
+            return []
+
+        results = []
+        for item in r2.json().get("value", []):
+            f        = item["fields"]
+            assignee = f.get("System.AssignedTo", "")
+            if isinstance(assignee, dict):
+                assignee = assignee.get("displayName", "")
+            created  = f.get("System.CreatedDate", "")
+            results.append({
+                "id":             item["id"],
+                "title":          f.get("System.Title", ""),
+                "state":          f.get("System.State", ""),
+                "created_date":   created[:10] if created else "",
+                "assigned_to":    assignee,
+                "area_path":      f.get("System.AreaPath", ""),
+                "iteration_path": f.get("System.IterationPath", ""),
+                "tags":           f.get("System.Tags", ""),
+                "ado_url":        f"{self.org_url}/{self.project}/_workitems/edit/{item['id']}",
+            })
+        return results
 
     def create_hierarchy(
         self,

@@ -191,3 +191,11 @@ def delete_workitems(body: DeleteRequest):
     for item_id in body.ids:
         results[str(item_id)] = client.delete_work_item(item_id)
     return {"results": results}
+
+# ─── My Features ───────────────────────────────────────────────
+
+@app.get("/api/features")
+def get_features():
+    client = _get_client()
+    features = client.get_features_by_tag()
+    return {"features": features}

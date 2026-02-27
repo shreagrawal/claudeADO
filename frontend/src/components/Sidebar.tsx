@@ -10,6 +10,7 @@ const items: { id: Page; label: string; icon: string }[] = [
   { id: "create-single", label: "Create Single Item", icon: "＋" },
   { id: "update",        label: "Update Item",        icon: "✎" },
   { id: "delete",        label: "Delete Items",       icon: "✕" },
+  { id: "features",      label: "My Features",        icon: "★" },
   { id: "settings",      label: "Settings",           icon: "⚙" },
 ];
 
