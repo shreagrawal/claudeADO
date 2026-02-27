@@ -142,7 +142,7 @@ def create_manual(cfg: dict):
     )
 
     if result:
-        console.print(f"\n[green]✓ Created {wit_type} ID={result['id']}[/green]")
+        console.print(f"\n[green]OK Created {wit_type} ID={result['id']}[/green]")
         console.print(f"  {cfg['ado_org_url']}/{cfg['ado_project']}/_workitems/edit/{result['id']}")
 
 
@@ -193,7 +193,7 @@ def update_item(cfg: dict):
 
     ok = client.update_work_item(item_id, updates)
     if ok:
-        console.print(f"[green]✓ Work item {item_id} updated.[/green]")
+        console.print(f"[green]OK Work item {item_id} updated.[/green]")
     else:
         console.print(f"[red]Failed to update work item {item_id}.[/red]")
 
@@ -219,7 +219,7 @@ def delete_items(cfg: dict):
     for item_id in ids:
         ok = client.delete_work_item(item_id)
         if ok:
-            console.print(f"  [green]✓ Deleted ID={item_id}[/green]")
+            console.print(f"  [green]OK Deleted ID={item_id}[/green]")
         else:
             console.print(f"  [red]✗ Failed to delete ID={item_id}[/red]")
 
@@ -237,7 +237,7 @@ def _preview_hierarchy(hierarchy: dict):
         console.print(f"\n  [bold cyan]PBI {i}:[/bold cyan] {pbi['title']}")
         console.print(f"    [dim]{pbi.get('description', '')}[/dim]")
         for t in pbi.get("tasks", []):
-            console.print(f"    [green]→[/green] [{t.get('effort', '?')}d] {t['title']}")
+            console.print(f"    [green]->[/green] [{t.get('effort', '?')}d] {t['title']}")
 
 
 def _print_summary(results: dict, cfg: dict):
@@ -248,7 +248,7 @@ def _print_summary(results: dict, cfg: dict):
 
     total_tasks = sum(len(p["tasks"]) for p in results.get("pbis", []))
     console.print(Panel(
-        f"[bold green]✓ Done![/bold green]\n\n"
+        f"[bold green]OK Done![/bold green]\n\n"
         f"Feature  : [cyan]#{feature['id']}[/cyan]\n"
         f"PBIs     : [cyan]{len(results['pbis'])}[/cyan]\n"
         f"Tasks    : [cyan]{total_tasks}[/cyan]\n\n"

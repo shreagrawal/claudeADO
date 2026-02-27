@@ -122,7 +122,7 @@ class ADOClient:
             console.print("[red]Failed to create Feature. Aborting.[/red]")
             return results
 
-        console.print(f"  [green]✓ Feature ID={feature['id']}[/green]")
+        console.print(f"  [green]OK Feature ID={feature['id']}[/green]")
         results["feature"] = feature
 
         # --- PBIs ---
@@ -141,7 +141,7 @@ class ADOClient:
                 console.print(f"  [red]Skipping tasks for failed PBI.[/red]")
                 continue
 
-            console.print(f"    [green]✓ PBI ID={pbi['id']}[/green]")
+            console.print(f"    [green]OK PBI ID={pbi['id']}[/green]")
             pbi_result = {"pbi": pbi, "tasks": []}
 
             # --- Tasks ---
@@ -157,7 +157,7 @@ class ADOClient:
                     parent_url=pbi["url"],
                 )
                 if task:
-                    console.print(f"      [green]✓ Task ID={task['id']}[/green] [{task_data.get('effort', '?')}d] {task_data['title']}")
+                    console.print(f"      [green]OK Task ID={task['id']}[/green] [{task_data.get('effort', '?')}d] {task_data['title']}")
                     pbi_result["tasks"].append(task)
 
             results["pbis"].append(pbi_result)

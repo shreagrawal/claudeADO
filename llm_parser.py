@@ -3,10 +3,15 @@ LLM Parser — uses Claude to convert free-form text into a
 structured Feature → PBI → Task hierarchy (JSON).
 """
 import os
+import sys
 import json
 import anthropic
 from rich.console import Console
 from rich.prompt import Prompt
+
+# Force UTF-8 on Windows to handle Unicode characters in API responses
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 console = Console()
 
@@ -85,7 +90,25 @@ def parse_text_to_hierarchy(text: str, api_key: str) -> dict | None:
 
 
 def get_api_key() -> str:
+    # 1. Explicit env var
     key = os.getenv("ANTHROPIC_API_KEY", "")
-    if not key:
-        key = Prompt.ask("  Enter your Anthropic API key", password=True)
+    if key:
+        return key
+
+    # 2. Auto-read from Claude Code local config (no separate key needed)
+    try:
+        import json
+        from pathlib import Path
+        claude_json = Path.home() / ".claude.json"
+        if claude_json.exists():
+            data = json.loads(claude_json.read_text())
+            key = data.get("primaryApiKey", "")
+            if key:
+                console.print("  [dim]Using Claude Code API key from ~/.claude.json[/dim]")
+                return key
+    except Exception:
+        pass
+
+    # 3. Prompt as last resort
+    key = Prompt.ask("  Enter your Anthropic API key", password=True)
     return key
