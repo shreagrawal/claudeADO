@@ -86,6 +86,99 @@ class ADOClient:
         r    = self.session.patch(url, headers=self._patch_headers(), data=json.dumps(body))
         return r.status_code in (200, 201)
 
+    def set_parent(self, item_id: int, parent_id: int) -> tuple[bool, str]:
+        """Set or replace the parent link of a work item.
+        Returns (success, error_message).
+        """
+        parent = self.get_work_item(parent_id)
+        if not parent:
+            return False, f"Parent work item {parent_id} not found"
+        parent_url = parent["url"]
+        item = self.get_work_item(item_id)
+        if not item:
+            return False, f"Work item {item_id} not found"
+
+        relations = item.get("relations") or []
+        console.print(f"  [dim]set_parent: {item_id} has {len(relations)} relation(s)[/dim]")
+
+        parent_idx = next(
+            (i for i, r in enumerate(relations) if r.get("rel") == "System.LinkTypes.Hierarchy-Reverse"),
+            None,
+        )
+        base_url = f"{self.base_url}/workitems/{item_id}?api-version=7.0"
+
+        # Step 1: remove existing parent relation if present (separate PATCH)
+        if parent_idx is not None:
+            remove_ops = [{"op": "remove", "path": f"/relations/{parent_idx}"}]
+            r = self.session.patch(base_url, headers=self._patch_headers(), data=json.dumps(remove_ops))
+            if r.status_code not in (200, 201):
+                msg = f"Failed to remove existing parent (HTTP {r.status_code}): {r.text[:300]}"
+                console.print(f"  [red]{msg}[/red]")
+                return False, msg
+
+        # Step 2: add new parent relation (separate PATCH)
+        add_ops = [{"op": "add", "path": "/relations/-", "value": {
+            "rel": "System.LinkTypes.Hierarchy-Reverse",
+            "url": parent_url,
+            "attributes": {"comment": ""},
+        }}]
+        r = self.session.patch(base_url, headers=self._patch_headers(), data=json.dumps(add_ops))
+        if r.status_code not in (200, 201):
+            msg = f"Failed to add new parent (HTTP {r.status_code}): {r.text[:300]}"
+            console.print(f"  [red]{msg}[/red]")
+            return False, msg
+
+        return True, ""
+
+    def get_children(self, parent_id: int) -> list:
+        """Query direct children via WIQL [System.Parent] — more reliable than parsing relations."""
+        wiql = {
+            "query": (
+                f"SELECT [System.Id] FROM WorkItems "
+                f"WHERE [System.Parent] = {parent_id} "
+                f"AND [System.State] <> 'Removed' "
+                f"ORDER BY [System.WorkItemType], [System.CreatedDate]"
+            )
+        }
+        url = f"{self.org_url}/{self.project}/_apis/wit/wiql?api-version=7.0"
+        r = self.session.post(url, json=wiql)
+        if r.status_code != 200:
+            console.print(f"  [red]get_children WIQL failed: {r.status_code} — {r.text[:200]}[/red]")
+            return []
+
+        work_items = r.json().get("workItems", [])
+        if not work_items:
+            return []
+
+        ids    = ",".join(str(w["id"]) for w in work_items[:200])
+        fields = "System.Id,System.WorkItemType,System.Title,System.State,System.AssignedTo,System.AreaPath,System.IterationPath,System.Tags,System.Parent"
+        r2 = self.session.get(
+            f"{self.org_url}/{self.project}/_apis/wit/workitems"
+            f"?ids={ids}&fields={fields}&api-version=7.0"
+        )
+        if r2.status_code != 200:
+            console.print(f"  [red]get_children batch fetch failed: {r2.status_code}[/red]")
+            return []
+
+        results = []
+        for item in r2.json().get("value", []):
+            f = item["fields"]
+            assignee = f.get("System.AssignedTo", "")
+            if isinstance(assignee, dict):
+                assignee = assignee.get("uniqueName", "")
+            results.append({
+                "id":             item["id"],
+                "type":           f.get("System.WorkItemType", ""),
+                "title":          f.get("System.Title", ""),
+                "state":          f.get("System.State", ""),
+                "assigned_to":    assignee,
+                "area_path":      f.get("System.AreaPath", ""),
+                "iteration_path": f.get("System.IterationPath", ""),
+                "tags":           f.get("System.Tags", ""),
+                "parent_id":      f.get("System.Parent"),
+            })
+        return results
+
     def delete_work_item(self, item_id: int) -> bool:
         url = f"{self.base_url}/workitems/{item_id}?api-version=7.0"
         r   = self.session.delete(url)

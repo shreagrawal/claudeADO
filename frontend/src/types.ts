@@ -38,6 +38,8 @@ export interface WorkItem {
   assigned_to: string;
   area_path: string;
   iteration_path: string;
+  tags?: string;
+  parent_id?: number | null;
 }
 
 export interface Feature {
@@ -52,4 +54,4 @@ export interface Feature {
   ado_url: string;
 }
 
-export type Page = "create-text" | "create-single" | "update" | "delete" | "settings" | "features";
+export type Page = "create-text" | "create-single" | "update" | "bulk-update" | "delete" | "settings" | "features";

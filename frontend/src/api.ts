@@ -40,5 +40,21 @@ export const updateWorkItem = (id: number, fields: Partial<{
 export const deleteWorkItems = (ids: number[]) =>
   api.post("/api/workitems/delete", { ids }).then(r => r.data);
 
+export const getChildren = (parentId: number) =>
+  api.get<{ parent: WorkItem; children: WorkItem[] }>(`/api/workitem/${parentId}/children`).then(r => r.data);
+
+export const getWorkItemsBatch = (ids: number[]) =>
+  api.get<{ items: WorkItem[] }>(`/api/workitems/batch?ids=${ids.join(",")}`).then(r => r.data.items);
+
+export const bulkUpdateWorkItems = (payload: {
+  ids: number[];
+  state?: string;
+  assigned_to?: string;
+  area_path?: string;
+  iteration_path?: string;
+  tags?: string;
+  parent_id?: number;
+}) => api.post<{ results: Record<string, boolean>; errors: Record<string, string> }>("/api/workitems/bulk-update", payload).then(r => r.data);
+
 export const getFeatures = () =>
   api.get<{ features: Feature[] }>("/api/features").then(r => r.data.features);

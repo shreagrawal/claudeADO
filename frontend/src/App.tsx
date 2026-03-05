@@ -4,6 +4,7 @@ import Toast from "./components/Toast";
 import CreateFromText from "./pages/CreateFromText";
 import CreateSingle from "./pages/CreateSingle";
 import UpdateItem from "./pages/UpdateItem";
+import BulkUpdateItems from "./pages/BulkUpdateItems";
 import DeleteItems from "./pages/DeleteItems";
 import Settings from "./pages/Settings";
 import MyFeatures from "./pages/MyFeatures";
@@ -28,8 +29,9 @@ export default function App() {
       <main className="flex-1 p-8 overflow-auto">
         <div className={show("create-text")}><CreateFromText onToast={showToast} /></div>
         <div className={show("create-single")}><CreateSingle   onToast={showToast} /></div>
-        <div className={show("update")}><UpdateItem      onToast={showToast} /></div>
-        <div className={show("delete")}><DeleteItems     onToast={showToast} /></div>
+        <div className={show("update")}><UpdateItem       onToast={showToast} /></div>
+        <div className={show("bulk-update")}><BulkUpdateItems onToast={showToast} /></div>
+        <div className={show("delete")}><DeleteItems      onToast={showToast} /></div>
         <div className={show("features")}><MyFeatures      onToast={showToast} /></div>
         <div className={show("settings")}><Settings        onToast={showToast} /></div>
       </main>

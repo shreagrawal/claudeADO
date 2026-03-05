@@ -61,6 +61,15 @@ class UpdateRequest(BaseModel):
 class DeleteRequest(BaseModel):
     ids: List[int]
 
+class BulkUpdateRequest(BaseModel):
+    ids: List[int]
+    state: Optional[str] = None
+    assigned_to: Optional[str] = None
+    area_path: Optional[str] = None
+    iteration_path: Optional[str] = None
+    tags: Optional[str] = None
+    parent_id: Optional[int] = None
+
 # ─── Helpers ───────────────────────────────────────────────────
 
 def _get_client() -> ADOClient:
@@ -199,6 +208,83 @@ def delete_workitems(body: DeleteRequest):
     for item_id in body.ids:
         results[str(item_id)] = client.delete_work_item(item_id)
     return {"results": results}
+
+# ─── Get children of a work item ──────────────────────────────
+
+@app.get("/api/workitem/{item_id}/children")
+def get_children(item_id: int):
+    client = _get_client()
+    item = client.get_work_item(item_id)
+    if not item:
+        raise HTTPException(status_code=404, detail=f"Work item {item_id} not found")
+    f = item["fields"]
+    parent_info = {
+        "id": item["id"],
+        "type": f.get("System.WorkItemType", ""),
+        "title": f.get("System.Title", ""),
+        "state": f.get("System.State", ""),
+    }
+    children = client.get_children(item_id)
+    return {"parent": parent_info, "children": children}
+
+# ─── Bulk fetch work items ─────────────────────────────────────
+
+@app.get("/api/workitems/batch")
+def get_workitems_batch(ids: str):
+    client = _get_client()
+    id_list = [int(i.strip()) for i in ids.split(",") if i.strip().isdigit()]
+    if not id_list:
+        raise HTTPException(status_code=400, detail="No valid IDs provided")
+    results = []
+    for item_id in id_list:
+        item = client.get_work_item(item_id)
+        if item:
+            f = item["fields"]
+            assignee = f.get("System.AssignedTo", "")
+            if isinstance(assignee, dict):
+                assignee = assignee.get("uniqueName", "")
+            # Extract current parent ID from relations
+            parent_id = None
+            for rel in (item.get("relations") or []):
+                if rel.get("rel") == "System.LinkTypes.Hierarchy-Reverse":
+                    parts = rel.get("url", "").rstrip("/").split("/")
+                    if parts and parts[-1].isdigit():
+                        parent_id = int(parts[-1])
+                    break
+            results.append({
+                "id": item["id"],
+                "type": f.get("System.WorkItemType", ""),
+                "title": f.get("System.Title", ""),
+                "state": f.get("System.State", ""),
+                "assigned_to": assignee,
+                "area_path": f.get("System.AreaPath", ""),
+                "iteration_path": f.get("System.IterationPath", ""),
+                "tags": f.get("System.Tags", ""),
+                "parent_id": parent_id,
+            })
+    return {"items": results}
+
+# ─── Bulk update work items ────────────────────────────────────
+
+@app.post("/api/workitems/bulk-update")
+def bulk_update_workitems(body: BulkUpdateRequest):
+    client = _get_client()
+    fields = {}
+    if body.state:          fields["System.State"] = body.state
+    if body.assigned_to:    fields["System.AssignedTo"] = body.assigned_to
+    if body.area_path:      fields["System.AreaPath"] = body.area_path
+    if body.iteration_path: fields["System.IterationPath"] = body.iteration_path
+    if body.tags is not None and body.tags != "": fields["System.Tags"] = body.tags
+    results = {}
+    errors  = {}
+    for item_id in body.ids:
+        ok = client.update_work_item(item_id, fields) if fields else True
+        if ok and body.parent_id:
+            ok, err = client.set_parent(item_id, body.parent_id)
+            if not ok:
+                errors[str(item_id)] = err
+        results[str(item_id)] = ok
+    return {"results": results, "errors": errors}
 
 # ─── My Features ───────────────────────────────────────────────
 
